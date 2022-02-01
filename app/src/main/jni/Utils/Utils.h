@@ -88,9 +88,7 @@ bool isLibraryLoaded(const char *libraryName) {
 
 //Credit: Octowolve
 void MakeToast(JNIEnv *env, jobject thiz, const char *text, int length) {
-    //Add our toast in here so it wont be easy to change by simply editing the smali and cant
-    //be cut out because this method is needed to start the hack (Octowolve is smart)
-    jstring jstr = env->NewStringUTF(text); //Edit this text to your desired toast message!
+    jstring jstr = env->NewStringUTF(text);
     jclass toast = env->FindClass(OBFUSCATE("android/widget/Toast"));
     jmethodID methodMakeText =
             env->GetStaticMethodID(
@@ -130,7 +128,6 @@ uintptr_t string2Offset(const char *c) {
         return strtoul(c, nullptr, base);
     }
 
-    // All other options exhausted, sizeof(uintptr_t) == sizeof(unsigned long long))
     return strtoull(c, nullptr, base);
 }
 
