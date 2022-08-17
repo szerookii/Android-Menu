@@ -8,14 +8,24 @@
 #include <unistd.h>
 #include <fstream>
 #include <iostream>
+#include <dlfcn.h>
 
-#include "Utils/Utils.h"
-#include "Menu.h"
+// imgui needed files
+#include <EGL/egl.h>
+#include <GLES2/gl2.h>
+#include "libraries/imgui/imgui.h"
+#include "libraries/imgui/imgui_internal.h"
+#include "libraries/imgui/backends/imgui_impl_opengl3.h"
+#include "libraries/imgui/backends/imgui_impl_android.h"
+
+#include "utils/Utils.h"
 
 #define targetLibName OBFUSCATE("libil2cpp.so")
 
 // Variables
 JNIEnv *globalEnv;
+bool setup;
+int glHeight, glWidth;
 
 // Hooks
 
@@ -37,56 +47,80 @@ void* hack_thread(void*) {
     return nullptr;
 }
 
-//JNI calls
-extern "C" {
-JNIEXPORT jobjectArray
-JNICALL
-Java_dev_seyz_modmenu_FloatingModMenuService_getFeatureList(JNIEnv *env, jobject context) {
-    jobjectArray ret;
+// ImGui stuff
+void setup_imgui() {
+    IMGUI_CHECKVERSION();
 
-    MakeToast(env, context, OBFUSCATE("Modded by Seyz"), Toast::LENGTH_LONG);
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
 
-    const char *features[] = {
-            OBFUSCATE("Toggle_Toggle"),
-    };
+    io.DisplaySize = ImVec2((float)glWidth, (float)glHeight);
 
-    int Total_Feature = (sizeof features / sizeof features[0]);
-    ret = (jobjectArray)
-            env->NewObjectArray(Total_Feature, env->FindClass(OBFUSCATE("java/lang/String")),
-                                env->NewStringUTF(""));
+    ImGui_ImplOpenGL3_Init("#version 100");
 
-    for (int i = 0; i < Total_Feature; i++)
-        env->SetObjectArrayElement(ret, i, env->NewStringUTF(features[i]));
+    ImFontConfig font_cfg;
+    font_cfg.SizePixels = 22.0f;
+    io.Fonts->AddFontDefault(&font_cfg);
 
-    pthread_t ptid;
-    pthread_create(&ptid, nullptr, antiLeech, nullptr);
-
-    return (ret);
+    ImGui::GetStyle().ScaleAllSizes(3.0f);
 }
 
-JNIEXPORT void JNICALL
-Java_dev_seyz_modmenu_Preferences_Changes(JNIEnv *env, jclass clazz, jobject obj,
-                                          jint featNum, jstring featName, jint value,
-                                          jboolean boolean, jstring str) {
-    LOGD(OBFUSCATE("Name: %d - %s | Value: = %d | Bool: = %d | Text: = %s"), featNum,
-         env->GetStringUTFChars(featName, nullptr), value,
-         boolean, str != nullptr ? env->GetStringUTFChars(str, nullptr) : "");
+EGLBoolean (*oEglSwapBuffers)(EGLDisplay dpy, EGLSurface surface);
+EGLBoolean hEglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
+    eglQuerySurface(dpy, surface, EGL_WIDTH, &glWidth);
+    eglQuerySurface(dpy, surface, EGL_HEIGHT, &glHeight);
 
-    switch (featNum) {
-        case 0:
-            break;
+    if (!setup) {
+        setup_imgui();
+        setup = true;
     }
+
+    ImGuiIO &io = ImGui::GetIO();
+
+    // Start the Dear ImGui frame
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui::NewFrame();
+
+    // add our shit here
+    ImGui::Begin("Niggerz");
+
+    ImGui::Text("some useless text testing");
+
+    ImGui::End();
+
+    // Rendering
+    ImGui::EndFrame();
+    ImGui::Render();
+    glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+
+    return oEglSwapBuffers(dpy, surface);
 }
+
+void* imgui_thread(void *) {
+    auto addr = (uintptr_t)dlsym(RTLD_NEXT, "eglSwapBuffers");
+    hook((void *)addr, (void *)hEglSwapBuffers, (void **)&oEglSwapBuffers);
+    pthread_exit(nullptr);
 }
 
 __attribute__((constructor))
 void lib_main() {
     pthread_t ptid;
-    pthread_create(&ptid, nullptr, hack_thread, nullptr);
+    pthread_create(&ptid, NULL, imgui_thread, NULL);
+
+    pthread_t modmenu;
+    pthread_create(&modmenu, nullptr, hack_thread, nullptr);
 }
 
 JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM *vm, void *reserved) {
     vm->GetEnv((void **) &globalEnv, JNI_VERSION_1_6);
+
+    void *sym_input = DobbySymbolResolver(("/system/lib/libinput.so"), ("_ZN7android13InputConsumer21initializeMotionEventEPNS_11MotionEventEPKNS_12InputMessageE"));
+    if (NULL != sym_input) {
+        // TODo : impl input from user lmao
+    }
+
     return JNI_VERSION_1_6;
 }

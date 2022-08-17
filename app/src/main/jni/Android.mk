@@ -8,9 +8,6 @@ include $(PREBUILT_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 
-# Here is the name of your lib.
-# When you change the lib name, change also on System.loadLibrary("") under OnCreate method on StaticActivity.java
-# Both must have same name
 LOCAL_MODULE    := ModMenu
 
 # Code optimization
@@ -22,13 +19,20 @@ LOCAL_LDLIBS := -llog -landroid -lEGL -lGLESv2
 LOCAL_ARM_MODE := arm
 
 LOCAL_C_INCLUDES += $(MAIN_LOCAL_PATH)
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/libraries/imgui
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/libraries/backends
 
 LOCAL_STATIC_LIBRARIES := libdobby
 
 # Here you add the cpp file
 LOCAL_SRC_FILES := Main.cpp \
-	Utils/Unity/MonoString.cpp
-
-LOCAL_LDLIBS := -llog -landroid -lGLESv2
+	utils/Unity/MonoString.cpp \
+	libraries/imgui/imgui.cpp \
+	libraries/imgui/imgui_draw.cpp \
+	libraries/imgui/imgui_demo.cpp \
+	libraries/imgui/imgui_widgets.cpp \
+	libraries/imgui/imgui_tables.cpp \
+	libraries/imgui/backends/imgui_impl_opengl3.cpp \
+	libraries/imgui/backends/imgui_impl_android.cpp \
 
 include $(BUILD_SHARED_LIBRARY)
