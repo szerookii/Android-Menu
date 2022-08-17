@@ -65,6 +65,12 @@ void setup_imgui() {
     ImGui::GetStyle().ScaleAllSizes(3.0f);
 }
 
+void(*oInput)(void*, void*, void*);
+void hInput(void* _this, void* ex_ab, void* ex_ac) {
+    oInput(_this, ex_ab, ex_ac);
+    ImGui_ImplAndroid_HandleInputEvent((AInputEvent *)_this);
+}
+
 EGLBoolean (*oEglSwapBuffers)(EGLDisplay dpy, EGLSurface surface);
 EGLBoolean hEglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
     eglQuerySurface(dpy, surface, EGL_WIDTH, &glWidth);
@@ -82,9 +88,10 @@ EGLBoolean hEglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
     ImGui::NewFrame();
 
     // add our shit here
-    ImGui::Begin("Niggerz");
+    ImGui::Begin("ModMenu");
 
-    ImGui::Text("some useless text testing");
+    bool check = false;
+    ImGui::Checkbox("Test", &check);
 
     ImGui::End();
 
@@ -100,26 +107,27 @@ EGLBoolean hEglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
 
 void* imgui_thread(void *) {
     auto addr = (uintptr_t)dlsym(RTLD_NEXT, "eglSwapBuffers");
-    hook((void *)addr, (void *)hEglSwapBuffers, (void **)&oEglSwapBuffers);
+
+    if(addr)
+        hook((void *)addr, (void *)hEglSwapBuffers, (void **)&oEglSwapBuffers);
+
     pthread_exit(nullptr);
 }
 
-__attribute__((constructor))
-void lib_main() {
+__attribute__((constructor)) void lib_main() {
     pthread_t ptid;
-    pthread_create(&ptid, NULL, imgui_thread, NULL);
+    pthread_create(&ptid, nullptr, imgui_thread, nullptr);
 
     pthread_t modmenu;
     pthread_create(&modmenu, nullptr, hack_thread, nullptr);
 }
 
-JNIEXPORT jint JNICALL
-JNI_OnLoad(JavaVM *vm, void *reserved) {
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     vm->GetEnv((void **) &globalEnv, JNI_VERSION_1_6);
 
     void *sym_input = DobbySymbolResolver(("/system/lib/libinput.so"), ("_ZN7android13InputConsumer21initializeMotionEventEPNS_11MotionEventEPKNS_12InputMessageE"));
-    if (NULL != sym_input) {
-        // TODo : impl input from user lmao
+    if (sym_input != nullptr) {
+        hook((void *)sym_input, (void *) hInput, (void **)&oInput);
     }
 
     return JNI_VERSION_1_6;
