@@ -62,13 +62,13 @@ void setup_imgui() {
     font_cfg.SizePixels = 22.0f;
     io.Fonts->AddFontDefault(&font_cfg);
 
-    ImGui::GetStyle().ScaleAllSizes(3.0f);
+    ImGui::GetStyle().ScaleAllSizes(5.0f);
 }
 
 void(*oInput)(void*, void*, void*);
 void hInput(void* _this, void* ex_ab, void* ex_ac) {
-    oInput(_this, ex_ab, ex_ac);
     ImGui_ImplAndroid_HandleInputEvent((AInputEvent *)_this);
+    oInput(_this, ex_ab, ex_ac);
 }
 
 EGLBoolean (*oEglSwapBuffers)(EGLDisplay dpy, EGLSurface surface);
@@ -90,17 +90,20 @@ EGLBoolean hEglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
     // add our shit here
     ImGui::Begin("ModMenu");
 
-    bool check = false;
-    ImGui::Checkbox("Test", &check);
+    bool check;
+    ImGui::Checkbox("Test checkbox", &check);
+
+    float slider;
+    ImGui::SliderFloat("Test slider", &slider, 0, 100);
 
     ImGui::End();
 
     // Rendering
     ImGui::EndFrame();
     ImGui::Render();
+
     glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
 
     return oEglSwapBuffers(dpy, surface);
 }

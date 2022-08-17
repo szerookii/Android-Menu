@@ -7,6 +7,7 @@
 #include <cstring>
 #include <string>
 #include <cstdlib>
+#include <sys/mman.h>
 
 #include <include/dobby.h>
 
@@ -86,6 +87,13 @@ uintptr_t string2Offset(const char *c) {
 
 void hook(void *orig_fcn, void* new_fcn, void **orig_fcn_ptr)
 {
+#if defined(__aarch64__)
+    auto pagesize = sysconf(_SC_PAGE_SIZE);
+    auto addr = ((uintptr_t)orig_fcn) & (-pagesize);
+    mprotect((void*)addr, pagesize, PROT_READ | PROT_WRITE | PROT_EXEC);
+    DobbyHook((void*)orig_fcn, (void*)new_fcn, (void**)&orig_fcn_ptr);
+#else
     DobbyHook(orig_fcn, new_fcn, orig_fcn_ptr);
+#endif
 }
 #endif
