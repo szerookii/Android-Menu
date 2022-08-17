@@ -8,12 +8,7 @@
 #include <string>
 #include <cstdlib>
 
-#if defined(__aarch64__)
-#include <And64InlineHook/And64InlineHook.hpp>
-#else
-#include <Substrate/SubstrateHook.h>
-#include <Substrate/CydiaSubstrate.h>
-#endif
+#include <include/dobby.h>
 
 #include "Logger.h"
 #include "Resolver.h"
@@ -138,12 +133,6 @@ namespace Toast {
 
 void hook(void *orig_fcn, void* new_fcn, void **orig_fcn_ptr)
 {
-#if defined(__aarch64__)
-    A64HookFunction(orig_fcn, new_fcn, orig_fcn_ptr);
-    LOGI(OBFUSCATE("x64 hook"));
-#else
-    MSHookFunction(orig_fcn, new_fcn, orig_fcn_ptr);
-    LOGI(OBFUSCATE("x86 hook"));
-#endif
+    DobbyHook(orig_fcn, new_fcn, orig_fcn_ptr);
 }
 #endif
