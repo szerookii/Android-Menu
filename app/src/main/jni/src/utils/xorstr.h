@@ -27,8 +27,11 @@ std::cout << OBFUSCATE_string << std::endl;
 
 ----------------------------------------------------------------------------- */
 
+#pragma once
+
 #include <cstddef>
 #include <string>
+
 namespace ay
 {
     // Obfuscates a string at compile time

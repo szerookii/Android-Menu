@@ -26,7 +26,7 @@ LOCAL_STATIC_LIBRARIES := libdobby
 
 # Here you add the cpp file
 LOCAL_SRC_FILES := Main.cpp \
-	utils/Unity/MonoString.cpp \
+	src/hook/HookManager.cpp \
 	libraries/imgui/imgui.cpp \
 	libraries/imgui/imgui_draw.cpp \
 	libraries/imgui/imgui_demo.cpp \
