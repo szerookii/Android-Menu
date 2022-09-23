@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <sys/mman.h>
 
+#include "Unity/Unity.h"
 #include "Logger.h"
 #include "xorstr.h"
 

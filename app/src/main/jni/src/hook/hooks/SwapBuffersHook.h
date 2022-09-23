@@ -8,7 +8,13 @@
 #include "libraries/imgui/imgui.h"
 #include "libraries/imgui/imgui_internal.h"
 #include "libraries/imgui/backends/imgui_impl_opengl3.h"
-#include "libraries/imgui/backends/imgui_impl_android.h"
+#include "libraries/ByNameModding/BNM.hpp"
+
+int(*oScreen_get_height)();
+int(*oScreen_get_width)();
+int(*oInput_get_touchCount)();
+UnityEngine_Touch_Fields(*oInput_GetTouch)(int index);
+
 
 class SwapBuffersHook : public Hook {
 public:
@@ -16,52 +22,96 @@ public:
 };
 
 bool setup = false;
+bool clearMouse = true;
 
-void setup_imgui(EGLint w, EGLint h) {
+void setup_imgui() {
     IMGUI_CHECKVERSION();
 
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
 
-    io.IniFilename = NULL;
-    io.DisplaySize = ImVec2((float)w, (float)h);
+    InitResolveFunc(oScreen_get_height, OBFUSCATE_BNM("UnityEngine.Screen::get_height"));
+    InitResolveFunc(oScreen_get_width, OBFUSCATE_BNM("UnityEngine.Screen::get_width"));
 
-    ImGui_ImplAndroid_Init(nullptr);
-    ImGui_ImplOpenGL3_Init();
+    int height = oScreen_get_height();
+    int width = oScreen_get_width();
+
+    io.DisplaySize = ImVec2((float)width, (float)height);
+
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplOpenGL3_Init("#version 100");
 
     ImFontConfig font_cfg;
-    font_cfg.SizePixels = 20.0f;
+    font_cfg.SizePixels = 22.0f;
     io.Fonts->AddFontDefault(&font_cfg);
 
-    ImGui::GetStyle().ScaleAllSizes(2.5f);
+    ImGui::GetStyle().ScaleAllSizes(3.0f);
 }
 
 EGLBoolean (*oEglSwapBuffers)(EGLDisplay dpy, EGLSurface surface);
 EGLBoolean hEglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
-    EGLint w, h;
-    eglQuerySurface(dpy, surface, EGL_WIDTH, &w);
-    eglQuerySurface(dpy, surface, EGL_HEIGHT, &h);
-
     if (!setup) {
-        setup_imgui(w, h);
+        setup_imgui();
         setup = true;
     }
 
     ImGuiIO &io = ImGui::GetIO();
 
+    InitResolveFunc(oInput_get_touchCount, OBFUSCATE_BNM("UnityEngine.Input::get_touchCount"));
+    int touchCount = oInput_get_touchCount();
+
+    if (touchCount > 0) {
+        InitResolveFunc(oInput_GetTouch, OBFUSCATE_BNM("UnityEngine.Input::GetTouch"));
+        UnityEngine_Touch_Fields touch = oInput_GetTouch(0);
+        float reverseY = io.DisplaySize.y - touch.m_Position.fields.y;
+
+        switch (touch.m_Phase) {
+            case TouchPhase::Began:
+            case TouchPhase::Stationary:
+                io.MousePos = ImVec2(touch.m_Position.fields.x, reverseY);
+                io.MouseDown[0] = true;
+                break;
+
+            case TouchPhase::Ended:
+            case TouchPhase::Canceled:
+                io.MouseDown[0] = false;
+                clearMouse = true;
+                break;
+
+            case TouchPhase::Moved:
+                io.MousePos = ImVec2(touch.m_Position.fields.x, reverseY);
+                break;
+
+            default:
+                break;
+        }
+    }
+
     ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplAndroid_NewFrame(w, h);
     ImGui::NewFrame();
 
-    ImGui::Begin("Hello, world!");
-    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    /* MENU */
+
+    ImGui::Begin("Unity");
+
+    ImGui::Text("Just a test :)");
 
     ImGui::End();
 
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    /* END MENU */
 
     ImGui::EndFrame();
+    ImGui::Render();
+
+    glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+    if (clearMouse) {
+        io.MousePos = ImVec2(-1, -1);
+        clearMouse = false;
+    }
 
     return oEglSwapBuffers(dpy, surface);
 }

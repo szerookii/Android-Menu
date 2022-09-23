@@ -34,5 +34,6 @@ LOCAL_SRC_FILES := Main.cpp \
 	libraries/imgui/imgui_tables.cpp \
 	libraries/imgui/backends/imgui_impl_opengl3.cpp \
 	libraries/imgui/backends/imgui_impl_android.cpp \
+	libraries/ByNameModding/BNM.cpp \
 
 include $(BUILD_SHARED_LIBRARY)
