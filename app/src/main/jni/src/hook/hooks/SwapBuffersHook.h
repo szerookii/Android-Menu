@@ -8,18 +8,14 @@
 #include "libraries/imgui/imgui.h"
 #include "libraries/imgui/imgui_internal.h"
 #include "libraries/imgui/backends/imgui_impl_opengl3.h"
-#include "libraries/imgui/backends/imgui_impl_android.h"
-#include "libraries/ByNameModding/BNM.hpp"
 
-int(*oScreen_get_height)();
-int(*oScreen_get_width)();
+int glHeight, glWidth;
+bool setup = false;
 
 class SwapBuffersHook : public Hook {
 public:
     void install();
 };
-
-bool setup = false;
 
 void setup_imgui() {
     IMGUI_CHECKVERSION();
@@ -27,18 +23,11 @@ void setup_imgui() {
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
 
-    InitResolveFunc(oScreen_get_height, OBFUSCATE_BNM("UnityEngine.Screen::get_height"));
-    InitResolveFunc(oScreen_get_width, OBFUSCATE_BNM("UnityEngine.Screen::get_width"));
-
-    int height = oScreen_get_height();
-    int width = oScreen_get_width();
-
-    io.DisplaySize = ImVec2((float)width, (float)height);
+    io.DisplaySize = ImVec2((float)glWidth, (float)glHeight);
 
     ImGui::StyleColorsDark();
 
     ImGui_ImplOpenGL3_Init("#version 100");
-    ImGui_ImplAndroid_Init(nullptr);
 
     ImFontConfig font_cfg;
     font_cfg.SizePixels = 22.0f;
@@ -49,18 +38,17 @@ void setup_imgui() {
 
 EGLBoolean (*oEglSwapBuffers)(EGLDisplay dpy, EGLSurface surface);
 EGLBoolean hEglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
+    eglQuerySurface(dpy, surface, EGL_WIDTH, &glWidth);
+    eglQuerySurface(dpy, surface, EGL_HEIGHT, &glHeight);
+
     if (!setup) {
         setup_imgui();
         setup = true;
     }
 
-    int height = oScreen_get_height();
-    int width = oScreen_get_width();
-
     ImGuiIO &io = ImGui::GetIO();
 
     ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplAndroid_NewFrame(width, height);
     ImGui::NewFrame();
 
     /* MENU */
