@@ -10,8 +10,8 @@ HookManager hookMgr;
 void HookManager::init() {
     LOGI("[HookManager] Initializing...");
 
-    hooks.push_back(new SwapBuffersHook());
     hooks.push_back(new InitializeMotionEvent());
+    hooks.push_back(new SwapBuffersHook());
 
     for (auto & hook : hooks) {
         hook->install();

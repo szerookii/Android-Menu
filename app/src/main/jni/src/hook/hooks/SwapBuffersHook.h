@@ -30,7 +30,7 @@ void setup_imgui() {
     ImGui_ImplOpenGL3_Init("#version 100");
 
     ImFontConfig font_cfg;
-    font_cfg.SizePixels = 22.0f;
+    font_cfg.SizePixels = 30.0f;
     io.Fonts->AddFontDefault(&font_cfg);
 
     ImGui::GetStyle().ScaleAllSizes(3.0f);
@@ -55,7 +55,9 @@ EGLBoolean hEglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
 
     ImGui::Begin("Unity");
 
-    ImGui::Text("Just a test :)");
+    ImGui::Text("Just a test");
+    bool lel = false;
+    ImGui::Checkbox("Checkbox", &lel);
 
     ImGui::End();
 

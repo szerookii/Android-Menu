@@ -14,16 +14,12 @@ public:
     void install();
 };
 
-void(*oinitializeMotionEvent)(void*, void*, void*);
-void hinitializeMotionEvent(void* _this, void* ex_ab, void* ex_ac) {
+void(*oinitializeMotionEvent)(AInputEvent*, void*, void*);
+void hinitializeMotionEvent(AInputEvent* _this, void* ex_ab, void* ex_ac) {
     oinitializeMotionEvent(_this, ex_ab, ex_ac);
-    ImGui_ImplAndroid_HandleInputEvent((AInputEvent*)_this);
+    ImGui_ImplAndroid_HandleInputEvent(_this);
 }
 
 void InitializeMotionEvent::install() {
-    void* sym_input = DobbySymbolResolver(("/system/lib/libinput.so"), ("_ZN7android13InputConsumer21initializeMotionEventEPNS_11MotionEventEPKNS_12InputMessageE"));
-
-    if (NULL != sym_input){
-        DobbyHook((void*)sym_input, (void*)hinitializeMotionEvent, (void **)&oinitializeMotionEvent);
-    }
+    this->hookSymbol("/system/lib/libinput.so", "_ZN7android13InputConsumer21initializeMotionEventEPNS_11MotionEventEPKNS_12InputMessageE", (void*)hinitializeMotionEvent, (void**)&oinitializeMotionEvent);
 }
